@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Vozes Silenciadas: crianças em situação de vulnerabilidade em abrigos
+    </title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+                  body {
+                    font-family: "Montserrat", sans-serif;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    margin: 0;
+                    padding: 20px;
+                    min-height: 100vh;
+                    background-color: #0a0a0a;
+                    color: #e0e0e0;
+                  }
+
+                  .header {
+                    text-align: center;
+                    margin-bottom: 40px;
+                    max-width: 800px;
+                  }
+
+                  .container {
+                    display: flex;
+                    justify-content: center;
+                    align-items: flex-start;
+                    width: 100%;
+                    max-width: 1200px;
+                    gap: 40px;
+                  }
+
+                  .map-container {
+                    width: 60%;
+                    max-width: 600px;
+                  }
+
+                  .description-container {
+                    width: 40%;
+                    max-width: 400px;
+                    height: 600px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    text-align: center;
+                    position: relative;
+                    padding-top: 100px;
+                  }
+
+                  .description-content {
+                    max-height: 400px;
+                    overflow-y: auto;
+                    margin-bottom: 20px;
+                    width: 100%;
+                  }
+
+                  h1 {
+                    color: #ffffff;
+                    font-weight: 300;
+                    font-size: 2.5em;
+                    margin-bottom: 20px;
+                    display: block;
+                    /* Garante que ocupa a linha inteira */
+                    width: 100%;
+                    /* Garante que a largura seja 100% */
+                    white-space: nowrap;/
+                  }
+
+                  h2 {
+                    color: #ffe4e8;
+                    font-weight: 400;
+                  }
+
+                  p {
+                    line-height: 1.6;
+                    color: #c0c0c0;
+                    font-weight: 300;
+                    text-align: left;
+                    font-size: 1.2em;
+                    /* Ajuste o tamanho da fonte aqui */
+                  }
+
+                  h1+p {
+                    margin-top: 30px;
+                    /* Espaço acima do primeiro parágrafo */
+                  }
+
+                  .navigation {
+                    position: absolute;
+                    bottom: 100px;
+                    left: 0;
+                    right: 0;
+                    display: flex;
+                    justify-content: space-between;
+                    width: 100%;
+                  }
+
+                  button {
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 10%;
+                    background-color: #dbc9cb;
+                    color: #181717;
+                    border: none;
+                    cursor: pointer;
+                    transition: background-color 0.3s;
+                    font-family: "Montserrat", sans-serif;
+                    font-size: 18px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    /* Remova esta linha: margin-top: -110px; */
+                  }
+
+                  button:hover {
+                    background-color: #ffd1dc;
+                  }
+
+                  @media (max-width: 768px) {
+                    .container {
+                      flex-direction: column;
+                      align-items: center;
+                    }
+
+                    .map-container,
+                    .description-container {
+                      width: 100%;
+                      max-width: 600px;
+                    }
+
+                    .description-container {
+                      height: 500px;
+                      padding-top: 40px;
+                    }
+
+                    .navigation {
+                      bottom: 40px;
+                    }
+                  }
+
+                  .texto-explicativo {
+                    text-align: center;
+                    margin: 20px 0;
+                    width: 100%;
+                    max-width: 800px;
+                  }
+
+                  .exlpicativo-text {
+                    font-weight: 400;
+                    color: #ffe4e8;
+                    line-height: 1.6;
+                    font-size: 1.2em;
+                  }
+
+                  table {
+                    width: 100%;
+                    margin-top: 20px;
+                    border-collapse: collapse;
+                  }
+
+                  th,
+                  td {
+                    padding: 10px;
+                    text-align: center;
+                    border: 1px solid #e0e0e0;
+                  }
+
+                  /* Estilos do gráfico */
+                  .grafico-container {
+                    margin-top: 20px;
+                    max-width: 800px;
+                  }
+
+                  canvas {
+                    width: 100%;
+                    height: 400px;
+                  }
+
+                  #estado-buttons {
+                    display: flex;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                    margin-top: 10px;
+                  }
+
+                  #metodologia {
+        margin-top: 700px; /* Empurra a div para o fim da página */
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="header">
+      <h1>Vozes silenciadas, refúgios comprometidos</h1>
+      <p>
+        Atualmente, 33.647 crianças estão acolhidas em abrigos (antigamente
+        chamados de "orfanatos") em todo o Brasil. Destas, apenas 4.928 crianças
+        estão disponíveis para adoção, segundo informações do Sistema Nacional
+        de Adoção e Acolhimento (SNA).
+      </p>
+      <p>
+        Há tempos, os abrigos são sinônimo de casa, lar, um refúgio para
+        crianças que, por algum motivo, tiveram suas guardas retiradas do seio
+        familiar, seja por violência, abuso, negligência ou abandono.
+      </p>
+      <p>
+        Mesmo que abrigos sejam refúgios, por muitas vezes, sob a tutela do
+        governo, esses locais viram palco de violência e as crianças, que já
+        estavam em vulnerabilidade anteriormente, são revimitizadas por aqueles
+        que deveriam defendê-las.
+      </p>
+
+      <p>
+        Este site interativo explora um tema pouco abordado nas discussões sobre
+        violação dos direitos humanos contra crianças e adolescentes. Casos de
+        negligência, maus-tratos e agressões também ocorrem em abrigos e
+        integram a ampla gama de violações denunciadas ao Disque Direitos
+        Humanos “Disque 100” em 2023.
+      </p>
+      <p>
+        Todas as informações contidas nos relatos são reais, retiradas de uma
+        base de dados pública, mas os nomes são fictícios.
+      </p>
+    </div>
+    <div class="texto-explicativo">
+      <h3 class="exlpicativo-text">
+        As principais denúncias contra crianças e adolescentes abrigados
+        envolvem maus-tratos, negligência, agressão, ameaça e tortura psíquica.
+      </h3>
+    </div>
+    <div class="container">
+      <div class="map-container" id="map"></div>
+      <div class="description-container">
+        <div class="description-content">
+          <h2 id="childName"></h2>
+          <p id="childDescription"></p>
+        </div>
+        <div class="navigation">
+          <button id="prevBtn" onclick="navigate(-1)">&lt;</button>
+          <button id="nextBtn" onclick="navigate(1)">&gt;</button>
+        </div>
+      </div>
+    </div>
+    <div style="margin-bottom: 20px">
+      <div style="margin-bottom: 20px">
+        <h2 style="margin-bottom: 20px">
+          Verifique a quantidade de denúncias mensais por estado
+        </h2>
+        <div
+          id="estado-buttons"
+          style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px"
+        >
+          <button onclick="atualizarTabela('AL')">AL</button>
+          <button onclick="atualizarTabela('BA')">BA</button>
+          <button onclick="atualizarTabela('CE')">CE</button>
+          <button onclick="atualizarTabela('DF')">DF</button>
+          <button onclick="atualizarTabela('ES')">ES</button>
+          <button onclick="atualizarTabela('GO')">GO</button>
+          <button onclick="atualizarTabela('MA')">MA</button>
+          <button onclick="atualizarTabela('MG')">MG</button>
+          <button onclick="atualizarTabela('MS')">MS</button>
+          <button onclick="atualizarTabela('MT')">MT</button>
+          <button onclick="atualizarTabela('PA')">PA</button>
+          <button onclick="atualizarTabela('PB')">PB</button>
+          <button onclick="atualizarTabela('PE')">PE</button>
+          <button onclick="atualizarTabela('PR')">PR</button>
+          <button onclick="atualizarTabela('RJ')">RJ</button>
+          <button onclick="atualizarTabela('RN')">RN</button>
+          <button onclick="atualizarTabela('RO')">RO</button>
+          <button onclick="atualizarTabela('RS')">RS</button>
+          <button onclick="atualizarTabela('SC')">SC</button>
+          <button onclick="atualizarTabela('SE')">SE</button>
+          <button onclick="atualizarTabela('SP')">SP</button>
+          <button onclick="atualizarTabela('TO')">TO</button>
+        </div>
+      </div>
+    </div>
+    <div class="grafico-container">
+      <canvas id="grafico"></canvas>
+    </div>
+    <div id="map"></div>
+    <div
+      id="info-text"
+      style="
+        text-align: left;
+        font-size: 16px;
+        margin-top: -640px;
+        margin-left: -450px;
+      "
+    >
+      Passe o mouse sobre o mapa para conferir o número de denúncias e vítimas
+      por estado
+    </div>
+
+    <div id="metodologia">
+      <h2>Metodologia</h2>
+      <p>
+        A partir dos microdados de denúncias de violação de direitos humanos
+        recebidas pelo Disque 100 em 2023, iniciamos um processo de limpeza dos
+        dados utilizando Python no Visual Studio Code. O objetivo era focar nas
+        denúncias relacionadas a serviços de abrigamento, conforme os registros
+        existentes na base de dados.
+      </p>
+      <p>
+        O primeiro passo na limpeza foi a remoção de hashes duplicados. Na base
+        de dados, cada hash representa o código único de uma denúncia para um
+        determinado par de vítima e suspeito. O dicionário de dados indica que é
+        possível haver desvios nos totais, pois uma mesma denúncia pode aparecer
+        em mais de um grupo de violação, cenário ou motivação. Para resolver
+        essa questão, desenvolvemos um código que eliminava os hashes
+        duplicados, garantindo que cada denúncia fosse contada apenas uma vez.
+      </p>
+      <p>
+        Após a remoção dos registros duplicados, prosseguimos para a combinação
+        de variáveis, permitindo a análise da quantidade de denúncias por
+        estado, o número de vítimas por estado e os tipos de violação que se
+        destacaram entre as principais ocorrências.
+      </p>
+      <h3>Links úteis</h3>
+      <p>
+        <a
+          href="https://docs.google.com/spreadsheets/d/1A7hwuxaavqfoqRpCCcA5-14pne6oQaDTROsUZZt7KQw/edit?gid=771449032#gid=771449032"
+          target="_blank"
+          >Base de dados de 2023 limpa</a
+        >
+      </p>
+      <p>
+        <a
+          href="https://www.gov.br/mdh/pt-br/acesso-a-informacao/dados-abertos/disque100"
+          target="_blank"
+          >Bases de dados do Disque 100</a
+        >
+      </p>
+    </div>
+
+    <div style="position: relative; text-align: center">
+      <script>
+        const children = [
+          {
+            name: "Júlia, 10 anos",
+            state: "AL",
+            description:
+              "Sob a tutela do Estado e acolhida em um abrigo, Júlia foi vítima de agressão física por um diretor/gestor da institução que foi acolhida em Santana do Ipanema em agosto de 2023. Segundo os dados coletados pela reportagem, Júlia consta uma das sete vítimas de 10 a 15 anos no Estado em 2023. Ao todo, foram 7 denúncias no ano.",
+          },
+          {
+            name: "AnaLu, 14 anos",
+            state: "BA",
+            description:
+              "AnaLu foi uma das duas vítimas que foi ameaça ou coagida por um diretor/gestor da instituição em que estava abrigada em Ilhéus, na Bahia, em outubro do ano passado. Ao todo, de acordo com os dados levantados pela reportagem, o estado recebeu doze denúncias envolvendo menores de 08 a 16 anos ao longo do ano de 2023. No ano, foram 17 vítimas.",
+          },
+          {
+            name: "Miguel, 03 anos",
+            state: "CE",
+            description:
+              "Ainda na primeira infância, Miguel, natural de Caucaia, no Ceará, foi uma das suas sete crianças ou adolescentes que teve sua integridade psíquica violada por um prestador de serviço na instituição em que estava abrigada, sendo vítima de ameaça ou coação. Ao todo, o Estado recebeu 14 denúncias e totaliza 44 vítimas de 03 a 17 anos.",
+          },
+          {
+            name: "Antônio, 10 anos",
+            state: "DF",
+            description:
+              "Aos 10 anos, Antônio foi vítima de exposição por um prestador de serviço em um abrigo em Brasília janeiro do ano passado. A base de dados não específica ao que se refere o termo exposição. Ao todo, o Estado teve 20 denúncias em 2023 e contou com 22 vítimas no ano com crianças de menos de 1 ano até 16 anos.",
+          },
+          {
+            name: "Ana, 01 ano",
+            state: "ES",
+            description:
+              "Foi vítima de exposição de risco à saúde em por um cuidador de um abrigo em Itapemirim, no Espirito Santo. Ela está entre as 24 crianças e adolescentes, com idade entre 1 e 16 anos, que sofreram diferentes tipos de violação de direitos humanos em abrigos no Espírito Santo. Ao todo, foram 21 denúncias.",
+          },
+          {
+            name: "Isabela, 02 anos",
+            state: "GO",
+            description:
+              "É uma das duas vítimas que foi agredida por um funcionário e ou prestador de serviços em um abrigo em Anápolis, em Goiás. No estado, houveram ao todo 68 vítimas crianças e adolescentes, com idade entre menos de 1 e 16 anos, que sofreram diferentes tipos de violação de direitos humanos enquanto estavam sob a tutela do Estado. Ao todo, foram 47 denúncias.",
+          },
+          {
+            name: "Paula, 05 anos",
+            state: "MA",
+            description:
+              "Aos 5 anos, teve a sua integrigade física violada, sofrendo insubsistência material, São Luis, no Maranhão pela mãe durante o período em junho do ano passado. No estado houveram 4 vítimas com 4 denúncias na faixa dos 5 anos sofrendo desde exposião de risco à saúde a insubsistência afetiva.",
+          },
+          {
+            name: "Allan, 08 anos",
+            state: "MG",
+            description:
+              "Allan foi uma das duas vítimas de maus tratos, em um abrigo em Belo Horizonte, em Minas Gerais em outubro de 2023. O suspeito de cometer a violação é o diretor/gestor da instituição. Ele é uma das 123 crianças ou adolescentes com idade entre 1 e 17 anos que sofreram diferentes tipos de violação de direitos humanos em abrigos do estado. Ao todo, foram 102 denúncias em 2023.",
+          },
+          {
+            name: "Aline, 16 anos",
+            state: "MS",
+            description:
+              "Aline foi vítima de erotização enquanto estava sob a tutela do Estado em um abrigo em Coronel Sapucaia, no Mato Grosso do Sul. O suspeito de cometer a violação é o diretor/gestor da Instituição. Conforme dados coletados pela reportagem, Aline consta como uma das 16 vítimas de violência em um abrigo no estado em 2023. Ao todo, o estado recebeu 12 denúncias",
+          },
+          {
+            name: "Luana, sem idade informada",
+            state: "MT",
+            description:
+              "Luana teve a sua liberdade cerceada, sendo usado para fins de exploração do trabalho doméstico em Alto Taquari, no Mato Grosso, pelo diretor/gestor de instituição em que esteve abrigada. Segundo a reportagem, foram 5 vítimas ao todo sem ter a idade informado e 5 denúncias.",
+          },
+          {
+            name: "Jayane, 08 anos",
+            state: "PA",
+            description:
+              "Ela teve a sua integridade psíquica, mais especificamente injúria, por um cuidador de um abrigo em Nova Ipixuna, no Pará, em junho de 2023. Ao todo, foram computadas 13 denúncias e 14 vítimas com idades entre 04 a 14 anos no passado.",
+          },
+          {
+            name: "Flora, 08 anos",
+            state: "PB",
+            description:
+              "Foi vítima de maus tratos por um funcionário, voluntário ou prestador de serviços durante o período em que esteve em um abrigo em João Pessoa, Paraíba. Ao todo foram, 3 vítimas e 3 denúncias ao longo de 2023. A idade de Flora é a única que consta, com as outras vítimas não tendo a idade identificada.",
+          },
+          {
+            name: "Luiza, 14 anos",
+            state: "PR",
+            description:
+              "Foi vítima de estupro aos 14 anos durante o período em que esteve abrigada em uma instituição em Arapongas, no Paraná. O acusado de ter cometido a violência é um prestador de serviço da instituição em que ela estava abrigada. Ao todo, foram 25 denúncias e 31 vítimas ao longo de 2023, com idades entre 02 e 14 anos.",
+          },
+          {
+            name: "Kaique, 14 anos",
+            state: "RJ",
+            description:
+              "É a única vítima de lesão corporal por parte de um funcionário, voluntário ou prestador de serviço em um abrigo em Niterói, no Rio de Janeiro. No estado, a denúncia que envolve Kaique não é única. Ele está entre as 109 crianças e adolescentes, com idade entre 1 e 17 anos, que sofreram diferentes tipos de violação de direitos humanos em abrigos. No ano, foram 77 denúncias.",
+          },
+          {
+            name: "Lina, 08 anos",
+            state: "RN",
+            description:
+              "Lina teve a sua integridade física violada em setembro de 2023 ao ser vítima de tortura psíquica pelo padrasto/madrasto durante o período em que esteve abrigada em uma instituição em Natal, no Rio Grandeo do Norte. No estado, ela foi uma das 5 vítimas no Estado no ano passado e está entre uma das 3 denúncias envolvendo crianças de 01 a 08 anos.",
+          },
+          {
+            name: "Larissa, 16 anos",
+            state: "RO",
+            description:
+              "Foi a única vítima de importunação sexual durante o período em que esteve abrigada em JI-Paraná, em Rondônia, em dezembro de 2023. Na denúncia, não constra qual a relação entre a vítima e o agressor, apenas com a classificação outros. Ao todo, foram 6 vítimas com idades entre 02 e 16 anos, e 4 denúncias em 2023.",
+          },
+          {
+            name: "Laís, 04 anos",
+            state: "RS",
+            description:
+              "Ela teve sua integridade pisúqica violada em outubro de 2023, mais específicamente por exposição, por um diretor/gestor da instituição em que estava abrigada em Rio Grande, no Rio Grande do Sul. Ao todo, foram 68 denúncias em 2023 e 78 vítimas ao longo de 2023 envolvendo menores de 01 a 17 anos.",
+          },
+          {
+            name: "Henrique, 01 ano",
+            state: "SC",
+            description:
+              "Acolhido em um abrigo coordenado pelo Estado, Henrique foi vítima de tortura física por um prestador de serviço de um abrigo em Ponte Serrada, em Santa Catarina. Henrique está entre as 18 vítimas com idade entre 1 e 17 anos que tiveram seus direitos violados em serviços de abrigamento no estado. Ao todo, foram 17 denúncias em 2023.",
+          },
+          {
+            name: "Rute, 7 anos",
+            state: "SP",
+            description:
+              "Ela foi uma das vítimas de estupro em um abrigo em Fatura, em São Paulo. O suspeito de cometer a violência é um cuidador que trabalha no abrigo. Em São Paulo, o caso de Rute não é único. Ela está entre as 358 crianças e adolescentes com idade entre recém-nascidos e 17 anos que sofreram diferentes tipos de violação de direitos humanos em abrigos do estado. No ano, foram 308 denúncias em 2023.",
+          },
+          {
+            name: "Luan, sem idade informada",
+            state: "SE",
+            description:
+              "Luan teve a sua integridade física violada, tendo sofrido maus tratos durante o período em que ficou abrigado em uma instituição em Nossa Senhora das Dores, no Sergipe, por um prestador de serviço do abrigo. Ele consta como a única vítima no estado em 2023, sem ter a sua idade identificada.",
+          },
+          {
+            name: "Miguel, 13 anos",
+            state: "TO",
+            description:
+              "Teve a sua integridade psíquica violada, sendo vítima de constrangimento em janerio deste ano durante o período em que esteve abrigado em uma instituição em Porto Nacional, no Tocantins. O suspeito de cometer a violência não teve a sua identidade identificada pela denúncia. Ele está entre as duas vítimas e as duas denúncias que o estado recebeu em 2023.",
+          },
+          {
+            name: "Benício, 04 anos",
+            state: "PE",
+            description:
+              "Teve seus direitos sociais violados, tendo sua alimentação cerceada pela mãe em agosto do ano passado durante o período em que esteve abrigado em uma instituição em Abreu e Lima, em Pernambuco. Ao todo, foram 13 vítimas no estado em 2023 e 13 denúncias.",
+          },
+        ];
+
+        let currentIndex = 0;
+
+        const width = 600;
+        const height = 600;
+
+        const svg = d3
+          .select("#map")
+          .append("svg")
+          .attr("width", "100%")
+          .attr("height", "100%")
+          .attr("viewBox", `0 0 ${width} ${height}`);
+
+        // Criação da tooltip
+        const tooltip = d3
+          .select("body")
+          .append("div")
+          .style("position", "absolute")
+          .style("background-color", "white")
+          .style("color", "black") // Texto preto
+          .style("border", "1px solid #ccc")
+          .style("padding", "8px")
+          .style("border-radius", "4px")
+          .style("pointer-events", "none")
+          .style("opacity", 0); // Inicialmente escondida
+
+        d3.json(
+          "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson"
+        ).then(function (brData) {
+          const projection = d3.geoMercator().fitSize([width, height], brData);
+          const path = d3.geoPath().projection(projection);
+
+          svg
+            .selectAll("path")
+            .data(brData.features)
+            .enter()
+            .append("path")
+            .attr("d", path)
+            .attr("fill", "#1a1a1a")
+            .attr("stroke", "#2a2a2a")
+            .on("mouseover", function (event, d) {
+              // Exibe a tooltip e define o conteúdo
+              tooltip
+                .style("opacity", 1)
+                .html(
+                  `${d.properties.sigla}<br>${getNumberOfdenuncias(
+                    d.properties.sigla
+                  )} denúncias<br>${getNumberOfVitimas(
+                    d.properties.sigla
+                  )} vítimas`
+                );
+            })
+            .on("mousemove", function (event) {
+              // Atualiza a posição da tooltip com base na posição do mouse
+              tooltip
+                .style("left", event.pageX + 10 + "px") // Ajusta a posição no eixo X
+                .style("top", event.pageY - 20 + "px"); // Ajusta a posição no eixo Y
+            })
+            .on("mouseout", function () {
+              // Esconde a tooltip
+              tooltip.style("opacity", 0);
+            });
+
+          updateDisplay(); // Chama a função para atualizar o mapa com base no estado inicial
+        });
+
+        function getNumberOfdenuncias(state) {
+          const denunciasData = {
+            RJ: 77,
+            SP: 308,
+            MG: 102,
+            ES: 21,
+            GO: 47,
+            PE: 13,
+            SC: 68,
+            CE: 14,
+            AL: 7,
+            BA: 12,
+            MS: 5,
+            RN: 3,
+            SE: 1,
+            RO: 4,
+            MT: 12,
+            MS: 5,
+            PR: 25,
+            PA: 13,
+            DF: 20,
+            MA: 4,
+            PB: 3,
+            TO: 2,
+            RS: 68,
+            // Adicione outros estados
+          };
+
+          return denunciasData[state] || 0; // Retorna 0 se o estado não estiver listado
+        }
+
+        function getNumberOfVitimas(state) {
+          const vitimasData = {
+            SP: 358,
+            MG: 123,
+            RJ: 109,
+            SC: 78,
+            GO: 68,
+            ES: 24,
+            DF: 22,
+            CE: 44,
+            PB: 3,
+            PE: 13,
+            PA: 14,
+            AL: 7,
+            MA: 4,
+            MS: 16,
+            MT: 5,
+            RN: 5,
+            RO: 6,
+            SE: 1,
+            TO: 2,
+            BA: 17,
+            PR: 31,
+            RS: 78,
+
+            // Adicione outros estados se necessário
+          };
+
+          return vitimasData[state] || 0;
+        }
+
+        function updateDisplay() {
+          const child = children[currentIndex];
+          document.getElementById("childName").textContent = child.name;
+          document.getElementById("childDescription").textContent =
+            child.description;
+
+          svg
+            .selectAll("path")
+            .attr("fill", (d) =>
+              d.properties.sigla === child.state ? "#ffe4e8" : "#1a1a1a"
+            );
+        }
+
+        function navigate(direction) {
+          currentIndex =
+            (currentIndex + direction + children.length) % children.length;
+          updateDisplay();
+        }
+
+        function navigate(direction) {
+          currentIndex =
+            (currentIndex + direction + children.length) % children.length;
+          updateDisplay();
+        }
+
+        const dados = {
+          AL: [0, 0, 0, 0, 0, 2, 2, 3, 0, 0, 0, 0],
+          BA: [1, 0, 0, 0, 1, 0, 1, 2, 0, 7, 0, 0],
+          CE: [1, 0, 0, 0, 0, 0, 1, 4, 1, 0, 1, 6],
+          DF: [6, 0, 0, 6, 2, 2, 1, 0, 0, 0, 2, 1],
+          ES: [2, 1, 0, 1, 0, 3, 4, 3, 3, 2, 1, 1],
+          GO: [0, 5, 17, 1, 12, 1, 7, 2, 1, 1, 0, 0],
+          MA: [0, 0, 0, 0, 1, 3, 0, 0, 0, 0, 0, 0],
+          MG: [8, 7, 21, 4, 10, 10, 4, 3, 7, 6, 6, 16],
+          MS: [0, 0, 0, 2, 0, 0, 6, 0, 1, 1, 1, 1],
+          MT: [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 0],
+          PA: [0, 0, 1, 3, 3, 3, 1, 1, 0, 0, 1, 0],
+          PB: [0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+          PE: [0, 0, 1, 0, 0, 1, 2, 4, 1, 4, 0, 0],
+          PR: [1, 2, 1, 2, 0, 0, 6, 1, 0, 4, 4, 4],
+          RJ: [27, 3, 3, 5, 3, 7, 3, 3, 17, 1, 3, 2],
+          RN: [0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0],
+          RO: [0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1],
+          RS: [3, 2, 1, 2, 2, 9, 8, 9, 4, 13, 9, 6],
+          SC: [0, 1, 0, 3, 4, 1, 2, 2, 2, 2, 0, 0],
+          SE: [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          SP: [15, 35, 24, 14, 29, 27, 19, 23, 35, 25, 27, 35],
+          TO: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        };
+
+        const meses = [
+          "Jan",
+          "Fev",
+          "Mar",
+          "Abr",
+          "Mai",
+          "Jun",
+          "Jul",
+          "Ago",
+          "Set",
+          "Out",
+          "Nov",
+          "Dez",
+        ];
+
+        let grafico; // Armazenar a referência do gráfico
+
+        function atualizarTabela(estadoSelecionado) {
+          const quantidades = dados[estadoSelecionado];
+          atualizarGrafico(quantidades);
+        }
+
+        function atualizarGrafico(quantidades) {
+          const ctx = document.getElementById("grafico").getContext("2d");
+
+          // Verifica se já existe um gráfico e destrói
+          if (grafico) {
+            grafico.destroy();
+          }
+
+          grafico = new Chart(ctx, {
+            type: "line",
+            data: {
+              labels: meses,
+              datasets: [
+                {
+                  label: "Denúncias",
+                  data: quantidades,
+                  borderColor: "rgba(255, 99, 132, 1)",
+                  borderWidth: 2,
+                  fill: false,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                },
+              },
+            },
+          });
+        }
+
+        // Chama a função atualizarTabela inicialmente para exibir os dados do estado padrão
+        atualizarTabela("SP");
+      </script>
+    </div>
+  </body>
+</html>
